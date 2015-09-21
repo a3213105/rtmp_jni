@@ -1,7 +1,5 @@
 #! /usr/bin/env bash
-#
-# Copyright (C) 2013-2014 Zhang Rui <bbcallen@gmail.com>
-#
+##
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -79,5 +77,3 @@ esac
 echo "\n--------------------"
 echo "[*] Finished"
 echo "--------------------"
-echo "# to continue to build ffmpeg, run script below,"
-echo "sh compile-rtmpapi.sh "
