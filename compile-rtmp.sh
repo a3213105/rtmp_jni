@@ -77,5 +77,3 @@ esac
 echo "\n--------------------"
 echo "[*] Finished"
 echo "--------------------"
-echo "# to continue to build ffmpeg, run script below,"
-echo "sh compile-rtmpapi.sh "
