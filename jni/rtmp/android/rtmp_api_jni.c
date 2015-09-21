@@ -138,7 +138,7 @@ int write_rtmp_video(JNIEnv *env, jobject thiz, jbyteArray data, jint len,jint d
         g_clazz.video_unused->len = 0;
         g_clazz.video_unused->size = 0;
         g_clazz.video_unused->next = NULL;
-        ALOGE("malloc new video data packet");
+        ALOGE("malloc new video data packet used size:%d",g_clazz.video_size);
     }
 
     data_pack* cur = g_clazz.video_unused;
@@ -186,7 +186,7 @@ int write_rtmp_audio(JNIEnv *env, jobject thiz, jbyteArray data, jint len,jint d
         g_clazz.audio_unused->len = 0;
         g_clazz.audio_unused->size = 0;
         g_clazz.audio_unused->next = NULL;
-        ALOGE("malloc new audio data packet");
+        ALOGE("malloc new audio data packet used size:%d",g_clazz.audio_size);
     }
 
     data_pack* cur = g_clazz.audio_unused;
@@ -323,30 +323,37 @@ int recycle_data(int type, data_pack* data)
 
 int rtmp_loop()
 {
-    int ret = 0;
+    int ret = 0, sz = 0;
     int type = 0;
     data_pack* data = NULL;
-    type = peak_pack_data(&data);
-    if(type==1) {
-        //video
-        if(g_clazz.is_annexb)
-            ret = rtmp_write_video_annexb(g_clazz.ctx,data->buf,data->len,data->dts, g_clazz.video_size>video_threshold?1:0);
-        else
-            ret = rtmp_write_video_mp4(g_clazz.ctx,data->buf,data->len,data->dts, g_clazz.video_size>video_threshold?1:0);
-         recycle_data(type,data);
-    } else if(type==2) {
+    while (  (type = peak_pack_data(&data)) > 0 ) {
+            if(type==1) {
+            //video
+            if(g_clazz.is_annexb)
+                ret = rtmp_write_video_annexb(g_clazz.ctx,data->buf,data->len,data->dts, g_clazz.video_size>video_threshold?1:0);
+            else
+                ret = rtmp_write_video_mp4(g_clazz.ctx,data->buf,data->len,data->dts, g_clazz.video_size>video_threshold?1:0);
+        } else if(type==2) {
         //audio
-        if(g_clazz.is_adts)
-            ret = rtmp_write_audio_adts(g_clazz.ctx,data->buf,data->len,data->dts);
-        else
-            ret = rtmp_write_audio_raw(g_clazz.ctx,data->buf,data->len,data->dts);
+            if(g_clazz.is_adts)
+                ret = rtmp_write_audio_adts(g_clazz.ctx,data->buf,data->len,data->dts);
+            else
+                ret = rtmp_write_audio_raw(g_clazz.ctx,data->buf,data->len,data->dts);
+        } else {
+                usleep(1234);
+                if(g_clazz.video_size>0 &&g_clazz.audio_size>0)
+                    ALOGE("data list is not empty, video:%d, audio:%d", g_clazz.video_size, g_clazz.audio_size);
+                break;
+        }
         recycle_data(type,data);
-    } else {
-            usleep(1000);
+        if(ret>=0)
+            sz += ret;
+        else
+            break;
     }
-
-     return ret;
+     return sz;
 }
+
 /*
 int rtmp_loop()
 {
@@ -429,6 +436,7 @@ int rtmp_loop()
     return ret;
 }
 */
+
 int init_rtmp()
 {
     int ret = -1;
